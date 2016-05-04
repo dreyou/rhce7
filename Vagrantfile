@@ -23,6 +23,12 @@ Vagrant.configure(2) do |config|
     server1.vm.synced_folder "./common", "/vagrant", type: "rsync"
     server1.vm.provision "shell", inline: $common
     server1.vm.provision "shell", inline: $server1
+    server1.vm.provider "virtualbox" do |vb|
+      vb.customize ['createhd', '--filename', "server1-drive1.vdi", '--size', 1024]
+      vb.customize ['storageattach', :id, '--storagectl', 'SATA Controller', '--port', 1, '--device', 0, '--type', 'hdd', '--medium', 'server1-drive1.vdi']
+      vb.customize ['createhd', '--filename', "server1-drive2.vdi", '--size', 1024]
+      vb.customize ['storageattach', :id, '--storagectl', 'SATA Controller', '--port', 2, '--device', 0, '--type', 'hdd', '--medium', 'server1-drive2.vdi']
+    end
   end
   config.vm.define :server2 do |server2|
     server2.ssh.forward_x11  = true
@@ -33,6 +39,12 @@ Vagrant.configure(2) do |config|
     server2.vm.synced_folder "./common", "/vagrant", type: "rsync"
     server2.vm.provision "shell", inline: $common
     server2.vm.provision "shell", inline: $server2
+    server2.vm.provider "virtualbox" do |vb|
+      vb.customize ['createhd', '--filename', "server2-drive1.vdi", '--size', 1024]
+      vb.customize ['storageattach', :id, '--storagectl', 'SATA Controller', '--port', 1, '--device', 0, '--type', 'hdd', '--medium', 'server2-drive1.vdi']
+      vb.customize ['createhd', '--filename', "server2-drive2.vdi", '--size', 1024]
+      vb.customize ['storageattach', :id, '--storagectl', 'SATA Controller', '--port', 2, '--device', 0, '--type', 'hdd', '--medium', 'server2-drive2.vdi']
+    end
   end
   config.vm.define :ipa do |ipa|
     ipa.vm.network "private_network", ip: "192.168.123.200"
