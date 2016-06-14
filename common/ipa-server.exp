@@ -18,11 +18,13 @@ expect "IPA admin password:" { send "password\r" }
 
 expect "Password (confirm):" { send "password\r" }
 
+expect "Existing BIND configuration detected, overwrite? \\\[no\\\]:" { send "yes\r" }
+
 expect "Do you want to configure DNS forwarders? \\\[yes\\\]:" { send "yes\r" }
 
-expect "Enter IP address for a DNS forwarder:" { send "10.0.2.3\r" }
+expect "Enter an IP address for a DNS forwarder, or press Enter to skip:" { send "10.0.2.3\r" }
 
-expect "Enter IP address for a DNS forwarder:" { send "\r" }
+expect "Enter an IP address for a DNS forwarder, or press Enter to skip:" { send "\r" }
 
 expect "Do you want to configure the reverse zone? \\\[yes\\\]:" { send "yes\r" }
 

@@ -80,7 +80,8 @@ systemctl restart NetworkManager.service
 systemctl stop network.service
 systemctl start network.service
 chkconfig network on
-yum -y --disableplugin=fastestmirror install epel-release xorg-x11-xauth mc vim expect
+yum clean all&&yum makecache
+yum -y --disableplugin=fastestmirror install epel-release xorg-x11-xauth mc vim expect deltarpm
 SCRIPT
 #
 # ipa node provisioning
@@ -98,9 +99,12 @@ systemctl restart NetworkManager
 
 yum -y --disableplugin=fastestmirror update
 
-yum -y --disableplugin=fastestmirror install ipa-server bind-dyndb-ldap
+yum -y --disableplugin=fastestmirror install ipa-server bind-dyndb-ldap ipa-server-dns
 
 systemctl isolate multi-user.target
+
+systemctl enable firewalld.service
+systemctl start firewalld.service
 
 expect -f /vagrant/ipa-server.exp 
 
@@ -112,8 +116,8 @@ cp -v ~/cacert.p12 /var/ftp/pub
 echo "password" | kinit admin
 klist
 
-echo "password" | ipa user-add lisa --first=lisa --last=jones --password
-echo "password" | ipa user-add linda --first=linda --last=thomsen --password
+echo "password" | ipa user-add alice --first=alice --last=porter --password
+echo "password" | ipa user-add robert --first=robert --last=lester --password
 
 ipa host-add --force server1.example.com
 ipa host-add --force server2.example.com
@@ -122,6 +126,9 @@ ipa service-add --force nfs/server1.example.com
 ipa service-add --force nfs/server2.example.com
 ipa service-add --force cifs/server1.example.com
 ipa service-add --force cifs/server2.example.com
+
+firewall-cmd --add-service={dns,freeipa-ldap,freeipa-ldaps,ftp,http,https,ldap,ldaps,ntp,kerberos,kpasswd} --permanent
+firewall-cmd --reload
 
 SCRIPT
 #
@@ -161,6 +168,7 @@ echo -e "192.168.123.220 server2.example.com server2\n" >> /etc/hosts
 echo -e "192.168.123.210 server1.example.com server1\n" >> /etc/hosts
 echo -e "192.168.123.200 ipa.example.com ipa\n" >> /etc/hosts
 systemctl restart NetworkManager
+yum clean all&&yum makecache
 yum -y groupinstall "Server with GUI"
 yum -y update
 systemctl enable firewalld.service
