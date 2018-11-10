@@ -6,7 +6,9 @@ Vagrant.configure(2) do |config|
   # Vagrant boxes for libvirt or virtualbox
   # 
   #config.vm.box = "puppetlabs/centos-7.0-64-nocm"
-  config.vm.box = "bento/centos-7.1"
+  #config.vm.box = "bento/centos-7.1"
+  #config.vm.box = "bento/centos-6.7"
+  #config.vm.box = "https://cloud.centos.org/centos/7/vagrant/x86_64/images/CentOS-7-x86_64-Vagrant-1809_01.VirtualBox.box"
   config.vm.provider "virtualbox" do |vb|
     vb.customize ["modifyvm", :id, "--memory", "1024"]
   end
@@ -15,6 +17,7 @@ Vagrant.configure(2) do |config|
 # 
 #
   config.vm.define :server1 do |server1|
+    server1.vm.box = "bento/centos-7.1"
     server1.ssh.forward_x11  = true
     server1.vm.network "private_network", ip: "192.168.123.210"
 #    server1.vm.network "private_network", type: "dhcp"
@@ -31,6 +34,7 @@ Vagrant.configure(2) do |config|
     end
   end
   config.vm.define :server2 do |server2|
+    server2.vm.box = "bento/centos-7.1"
     server2.ssh.forward_x11  = true
     server2.vm.network "private_network", ip: "192.168.123.220"
 #    server2.vm.network "private_network", type: "dhcp"
@@ -47,11 +51,12 @@ Vagrant.configure(2) do |config|
     end
   end
   config.vm.define :ipa do |ipa|
+    ipa.vm.box = "bento/centos-6.7"
     ipa.vm.network "private_network", ip: "192.168.123.200"
     ipa.vm.hostname = "ipa.example.com"
     ipa.vm.synced_folder "./common", "/vagrant", type: "rsync"
-    ipa.vm.provision "shell", inline: $common
-    ipa.vm.provision "shell", inline: $ipa
+#    ipa.vm.provision "shell", inline: $common
+#    ipa.vm.provision "shell", inline: $ipa
   end
 #
 # Common node provisioning
@@ -89,29 +94,53 @@ SCRIPT
 $ipa = <<SCRIPT
 #!/bin/sh
 >&2 echo Ipa setup
-#
+ping -c 2 -W 2 google-public-dns-a.google.com
+if [[ $? != 0 ]]
+then
+  echo "Can't connect to internet" >&2
+  exit 1
+fi
+
+service iptables stop
+chkconfig iptables off
+
+yum clean all&&yum makecache
+yum -y --disableplugin=fastestmirror install epel-release xorg-x11-xauth mc vim expect deltarpm
+
 sed -i 's/ipa.example.com//' /etc/hosts
 sed -i 's/ipa//' /etc/hosts
 echo -e "192.168.123.200 ipa.example.com\n" >> /etc/hosts
 echo -e "192.168.123.220 server2.example.com server2\n" >> /etc/hosts
 echo -e "192.168.123.210 server1.example.com server1\n" >> /etc/hosts
-systemctl restart NetworkManager
-
-yum -y --disableplugin=fastestmirror update
+service network restart
 
 yum -y --disableplugin=fastestmirror install ipa-server bind-dyndb-ldap ipa-server-dns
-
-systemctl isolate multi-user.target
-
-systemctl enable firewalld.service
-systemctl start firewalld.service
 
 expect -f /vagrant/ipa-server.exp 
 
 yum -y --disableplugin=fastestmirror install vsftpd
-systemctl enable vsftpd
-systemctl start vsftpd
+
+chkconfig vsftpd on
+service vsftpd start
+
 cp -v ~/cacert.p12 /var/ftp/pub
+
+#
+# TODO: Add iptables rules
+#
+# 1. You must make sure these network ports are open:
+# TCP Ports:
+#   * 80, 443: HTTP/HTTPS
+#   * 389, 636: LDAP/LDAPS
+#   * 88, 464: kerberos
+#   * 53: bind
+# UDP Ports:
+#   * 88, 464: kerberos
+#   * 53: bind
+#   * 123: ntp
+
+#service iptables start
+#chkconfig iptables on
 
 echo "password" | kinit admin
 klist
@@ -126,9 +155,6 @@ ipa service-add --force nfs/server1.example.com
 ipa service-add --force nfs/server2.example.com
 ipa service-add --force cifs/server1.example.com
 ipa service-add --force cifs/server2.example.com
-
-firewall-cmd --add-service={dns,freeipa-ldap,freeipa-ldaps,ftp,http,https,ldap,ldaps,ntp,kerberos,kpasswd} --permanent
-firewall-cmd --reload
 
 SCRIPT
 #
