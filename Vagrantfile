@@ -18,6 +18,7 @@ Vagrant.configure(2) do |config|
 #
   config.vm.define :server1 do |server1|
     server1.vm.box = "bento/centos-7.1"
+    server1.ssh.forward_agent  = true
     server1.ssh.forward_x11  = true
     server1.vm.network "private_network", ip: "192.168.123.210"
 #    server1.vm.network "private_network", type: "dhcp"
@@ -27,14 +28,15 @@ Vagrant.configure(2) do |config|
     server1.vm.provision "shell", inline: $common
     server1.vm.provision "shell", inline: $server1
     server1.vm.provider "virtualbox" do |vb|
-      vb.customize ['createhd', '--filename', "server1-drive1.vdi", '--size', 1024]
-      vb.customize ['storageattach', :id, '--storagectl', 'SATA Controller', '--port', 1, '--device', 0, '--type', 'hdd', '--medium', 'server1-drive1.vdi']
-      vb.customize ['createhd', '--filename', "server1-drive2.vdi", '--size', 1024]
-      vb.customize ['storageattach', :id, '--storagectl', 'SATA Controller', '--port', 2, '--device', 0, '--type', 'hdd', '--medium', 'server1-drive2.vdi']
+      #vb.customize ['createhd', '--filename', "server1-drive1-1.vdi", '--size', 1024]
+      vb.customize ['storageattach', :id, '--storagectl', 'SATA Controller', '--port', 1, '--device', 0, '--type', 'hdd', '--medium', 'server1-drive1-1.vdi']
+      #vb.customize ['createhd', '--filename', "server1-drive2-1.vdi", '--size', 1024]
+      vb.customize ['storageattach', :id, '--storagectl', 'SATA Controller', '--port', 2, '--device', 0, '--type', 'hdd', '--medium', 'server1-drive2-1.vdi']
     end
   end
   config.vm.define :server2 do |server2|
     server2.vm.box = "bento/centos-7.1"
+    server2.ssh.forward_agent  = true
     server2.ssh.forward_x11  = true
     server2.vm.network "private_network", ip: "192.168.123.220"
 #    server2.vm.network "private_network", type: "dhcp"
@@ -44,10 +46,10 @@ Vagrant.configure(2) do |config|
     server2.vm.provision "shell", inline: $common
     server2.vm.provision "shell", inline: $server2
     server2.vm.provider "virtualbox" do |vb|
-      vb.customize ['createhd', '--filename', "server2-drive1.vdi", '--size', 1024]
-      vb.customize ['storageattach', :id, '--storagectl', 'SATA Controller', '--port', 1, '--device', 0, '--type', 'hdd', '--medium', 'server2-drive1.vdi']
-      vb.customize ['createhd', '--filename', "server2-drive2.vdi", '--size', 1024]
-      vb.customize ['storageattach', :id, '--storagectl', 'SATA Controller', '--port', 2, '--device', 0, '--type', 'hdd', '--medium', 'server2-drive2.vdi']
+      #vb.customize ['createhd', '--filename', "server2-drive1-1.vdi", '--size', 1024]
+      vb.customize ['storageattach', :id, '--storagectl', 'SATA Controller', '--port', 1, '--device', 0, '--type', 'hdd', '--medium', 'server2-drive1-1.vdi']
+      #vb.customize ['createhd', '--filename', "server2-drive2-1.vdi", '--size', 1024]
+      vb.customize ['storageattach', :id, '--storagectl', 'SATA Controller', '--port', 2, '--device', 0, '--type', 'hdd', '--medium', 'server2-drive2-1.vdi']
     end
   end
   config.vm.define :ipa do |ipa|
@@ -84,7 +86,6 @@ systemctl disable firewalld.service
 systemctl restart NetworkManager.service
 systemctl stop network.service
 systemctl start network.service
-chkconfig network on
 yum clean all&&yum makecache
 yum -y --disableplugin=fastestmirror install epel-release xorg-x11-xauth mc vim expect deltarpm
 SCRIPT
@@ -170,7 +171,7 @@ echo -e "192.168.123.210 server1.example.com server1\n" >> /etc/hosts
 echo -e "192.168.123.200 ipa.example.com ipa\n" >> /etc/hosts
 systemctl restart NetworkManager
 yum -y groupinstall "Server with GUI"
-yum -y update
+#yum -y update
 systemctl enable firewalld.service
 systemctl start firewalld.service
 useradd -s /sbin/nologin suser0
@@ -179,7 +180,7 @@ useradd -s /sbin/nologin suser2
 useradd -s /sbin/nologin tuser0
 useradd -s /sbin/nologin tuser1
 useradd -s /sbin/nologin tuser2
-#yum -y --disableplugin=fastestmirror install ipa-client
+#yum -y --disableplugin=fastestmirror install ipa-client pam_krb5 nss-pam-ldapd authconfig-gtk
 #ipa-getkeytab -s ipa.example.com -p nfs/server1.example.com -k /etc/krb5.keytab
 SCRIPT
 #
@@ -196,7 +197,7 @@ echo -e "192.168.123.200 ipa.example.com ipa\n" >> /etc/hosts
 systemctl restart NetworkManager
 yum clean all&&yum makecache
 yum -y groupinstall "Server with GUI"
-yum -y update
+#yum -y update
 systemctl enable firewalld.service
 systemctl start firewalld.service
 useradd -s /sbin/nologin suser0
@@ -205,7 +206,7 @@ useradd -s /sbin/nologin suser2
 useradd -s /sbin/nologin tuser0
 useradd -s /sbin/nologin tuser1
 useradd -s /sbin/nologin tuser2
-#yum -y --disableplugin=fastestmirror install ipa-client
+#yum -y --disableplugin=fastestmirror install ipa-client pam_krb5 nss-pam-ldapd authconfig-gtk
 #ipa-getkeytab -s ipa.example.com -p nfs/server2.example.com -k /etc/krb5.keytab
 SCRIPT
 end
