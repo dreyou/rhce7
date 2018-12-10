@@ -21,15 +21,15 @@ Vagrant.configure(2) do |config|
     server1.ssh.forward_agent  = true
     server1.ssh.forward_x11  = true
     server1.vm.network "private_network", ip: "192.168.123.210"
-#    server1.vm.network "private_network", type: "dhcp"
-#    server1.vm.network "private_network", type: "dhcp"
+    server1.vm.network "private_network", type: "dhcp"
+    server1.vm.network "private_network", type: "dhcp"
     server1.vm.hostname = "server1.example.com"
     server1.vm.synced_folder "./common", "/vagrant", type: "rsync"
     server1.vm.provision "shell", inline: $common
     server1.vm.provision "shell", inline: $server1
     server1.vm.provider "virtualbox" do |vb|
-      #vb.customize ['createhd', '--filename', "server1-drive1-1.vdi", '--size', 1024]
-      vb.customize ['storageattach', :id, '--storagectl', 'SATA Controller', '--port', 1, '--device', 0, '--type', 'hdd', '--medium', 'server1-drive1-1.vdi']
+      vb.customize ['createhd', '--filename', "server1-drive1-1.vdi", '--size', 1024]
+      b.customize ['storageattach', :id, '--storagectl', 'SATA Controller', '--port', 1, '--device', 0, '--type', 'hdd', '--medium', 'server1-drive1-1.vdi']
       #vb.customize ['createhd', '--filename', "server1-drive2-1.vdi", '--size', 1024]
       vb.customize ['storageattach', :id, '--storagectl', 'SATA Controller', '--port', 2, '--device', 0, '--type', 'hdd', '--medium', 'server1-drive2-1.vdi']
     end
@@ -39,16 +39,16 @@ Vagrant.configure(2) do |config|
     server2.ssh.forward_agent  = true
     server2.ssh.forward_x11  = true
     server2.vm.network "private_network", ip: "192.168.123.220"
-#    server2.vm.network "private_network", type: "dhcp"
-#    server2.vm.network "private_network", type: "dhcp"
+    server2.vm.network "private_network", type: "dhcp"
+    server2.vm.network "private_network", type: "dhcp"
     server2.vm.hostname = "server2.example.com"
     server2.vm.synced_folder "./common", "/vagrant", type: "rsync"
     server2.vm.provision "shell", inline: $common
     server2.vm.provision "shell", inline: $server2
     server2.vm.provider "virtualbox" do |vb|
-      #vb.customize ['createhd', '--filename', "server2-drive1-1.vdi", '--size', 1024]
+      vb.customize ['createhd', '--filename', "server2-drive1-1.vdi", '--size', 1024]
       vb.customize ['storageattach', :id, '--storagectl', 'SATA Controller', '--port', 1, '--device', 0, '--type', 'hdd', '--medium', 'server2-drive1-1.vdi']
-      #vb.customize ['createhd', '--filename', "server2-drive2-1.vdi", '--size', 1024]
+      vb.customize ['createhd', '--filename', "server2-drive2-1.vdi", '--size', 1024]
       vb.customize ['storageattach', :id, '--storagectl', 'SATA Controller', '--port', 2, '--device', 0, '--type', 'hdd', '--medium', 'server2-drive2-1.vdi']
     end
   end
@@ -57,8 +57,8 @@ Vagrant.configure(2) do |config|
     ipa.vm.network "private_network", ip: "192.168.123.200"
     ipa.vm.hostname = "ipa.example.com"
     ipa.vm.synced_folder "./common", "/vagrant", type: "rsync"
-#    ipa.vm.provision "shell", inline: $common
-#    ipa.vm.provision "shell", inline: $ipa
+    ipa.vm.provision "shell", inline: $common
+    ipa.vm.provision "shell", inline: $ipa
   end
 #
 # Common node provisioning
@@ -124,7 +124,7 @@ yum -y --disableplugin=fastestmirror install vsftpd
 chkconfig vsftpd on
 service vsftpd start
 
-cp -v ~/cacert.p12 /var/ftp/pub
+cp /etc/ipa/ca.crt /var/ftp/pub
 
 #
 # TODO: Add iptables rules
@@ -154,8 +154,26 @@ ipa host-add --force server2.example.com
 
 ipa service-add --force nfs/server1.example.com
 ipa service-add --force nfs/server2.example.com
+ipa service-add --force nfs/server1
+ipa service-add --force nfs/server2
 ipa service-add --force cifs/server1.example.com
 ipa service-add --force cifs/server2.example.com
+ipa service-add --force cifs/server1
+ipa service-add --force cifs/server2
+
+ipa-getkeytab -s ipa.example.com -p nfs/server1.example.com -k krb5.keytab
+ipa-getkeytab -s ipa.example.com -p nfs/server2.example.com -k krb5.keytab
+ipa-getkeytab -s ipa.example.com -p nfs/server1 -k all.keytab
+ipa-getkeytab -s ipa.example.com -p nfs/server2 -k all.keytab
+ipa-getkeytab -s ipa.example.com -p cifs/server1.example.com -k krb5.keytab
+ipa-getkeytab -s ipa.example.com -p cifs/server2.example.com -k krb5.keytab
+ipa-getkeytab -s ipa.example.com -p cifs/server1 -k all.keytab
+ipa-getkeytab -s ipa.example.com -p cifs/server2 -k all.keytab
+
+cp krb5.keytab /var/ftp/pub
+
+chmod 644 /var/ftp/pub/*
+restorecon -R /var/ftp/pub
 
 SCRIPT
 #
