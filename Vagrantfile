@@ -94,6 +94,10 @@ SCRIPT
 #
 $ipa = <<SCRIPT
 #!/bin/sh
+#
+# Information how to install and configure IPA server on CentOS 7.x
+# https://www.lisenet.com/2016/freeipa-server-on-rhel-7-centos-7/
+#
 >&2 echo Ipa setup
 ping -c 2 -W 2 google-public-dns-a.google.com
 if [[ $? != 0 ]]
